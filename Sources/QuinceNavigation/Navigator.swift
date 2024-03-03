@@ -4,7 +4,7 @@ public class Navigator {
     
     // MARK: Nested Entities
     
-    enum PresentationKind {
+    public enum PresentationKind {
         case `default`(UIViewController)
         case modal(hasNavigationBar: Bool, UIViewController, UIModalTransitionStyle, UIModalPresentationStyle)
         case popover(UIViewController, UIPopoverPresentationControllerDelegate?, PopoverData)
@@ -12,12 +12,12 @@ public class Navigator {
         case alert(AlertKind)
     }
     
-    enum AlertKind {
+    public enum AlertKind {
         case oneButton(title: String, message: String? = nil, buttonTitle: String, action: (() -> Void)? = nil)
         case twoButtons(title: String, message: String? = nil, firstButtonTitle: String, secondButtonTitle: String, firstButtonAction: (() -> Void)?, secondButtonAction: (() -> Void)?)
     }
     
-    struct PopoverData {
+    public struct PopoverData {
         var sourceRect: CGRect
         var sourceView: UIView
         var arrowDirection: UIPopoverArrowDirection = .down
@@ -25,7 +25,7 @@ public class Navigator {
     
     // MARK: Private properties
     
-    private(set) weak var navigationController: UINavigationController?
+    public private(set) weak var navigationController: UINavigationController?
     private weak var navigationStackFirstViewController: UIViewController?
     private weak var presentationStackFirstViewController: UIViewController?
     private var presentingViewController: UIViewController? {
@@ -34,7 +34,7 @@ public class Navigator {
     
     // MARK: Init
     
-    init(_ navigationController: UINavigationController) {
+    public init(_ navigationController: UINavigationController) {
         self.navigationController = navigationController
         
         navigationStackFirstViewController = navigationController.viewControllers.last
@@ -43,7 +43,7 @@ public class Navigator {
     
     // MARK: Functions
     
-    func show(
+    public func show(
         _ presentationKind: PresentationKind,
         animated: Bool = true
     ) {
@@ -84,7 +84,7 @@ public class Navigator {
         }
     }
     
-    func close(
+    public func close(
         _ viewController: UIViewController?,
         animated: Bool = true,
         _ completion: (() -> Void)? = nil
@@ -108,7 +108,7 @@ public class Navigator {
         }
     }
     
-    func closeStack(animated: Bool = true) {
+    public func closeStack(animated: Bool = true) {
         
         let completion = { [weak self] in
             guard let self, let navigationStackFirstViewController, self.navigationController?.viewControllers.contains(navigationStackFirstViewController) ?? false else { return }
