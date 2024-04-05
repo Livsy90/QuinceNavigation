@@ -7,27 +7,40 @@ public class Navigator {
     public enum PresentationKind {
         case `default`(UIViewController)
         case modal(hasNavigationBar: Bool, UIViewController, UIModalTransitionStyle, UIModalPresentationStyle)
-        case popover(UIViewController, UIPopoverPresentationControllerDelegate?, PopoverData)
+        case popover(UIViewController, UIPopoverPresentationControllerDelegate?, PopoverModel)
         case root(UIViewController)
-        case alert(AlertKind)
+        case alert(AlertPresentationKind)
     }
     
-    public enum AlertKind {
+    public enum AlertPresentationKind {
         case oneButton(title: String, message: String? = nil, buttonTitle: String, action: (() -> Void)? = nil)
         case twoButtons(title: String, message: String? = nil, firstButtonTitle: String, secondButtonTitle: String, firstButtonAction: (() -> Void)?, secondButtonAction: (() -> Void)?)
     }
     
-    public struct PopoverData {
+    public struct PopoverModel {
         var sourceRect: CGRect
         var sourceView: UIView
-        var arrowDirection: UIPopoverArrowDirection = .down
+        var permittedArrowDirections: UIPopoverArrowDirection
+        
+        public init(sourceRect: CGRect, sourceView: UIView, permittedArrowDirections: UIPopoverArrowDirection) {
+            self.sourceRect = sourceRect
+            self.sourceView = sourceView
+            self.permittedArrowDirections = permittedArrowDirections
+        }
     }
     
-    // MARK: Private properties
+    // MARK: Properties
     
-    public private(set) weak var navigationController: UINavigationController?
-    private weak var navigationStackFirstViewController: UIViewController?
-    private weak var presentationStackFirstViewController: UIViewController?
+    var childNavigator: Navigator {
+        Navigator(navigationController)
+    }
+    
+    // MARK: Private Properties
+    
+    private let navigationController: UINavigationController
+    private let navigationStackFirstViewController: UIViewController?
+    private let presentationStackFirstViewController: UIViewController?
+    
     private var presentingViewController: UIViewController? {
         presentationStackFirstViewController?.presentationStack.last ?? presentationStackFirstViewController
     }
@@ -78,7 +91,7 @@ public class Navigator {
                 animated: animated
             )
         case let .root(viewController):
-            navigationController?.setViewControllers([viewController], animated: animated)
+            navigationController.setViewControllers([viewController], animated: animated)
         case let .alert(kind):
             presentAlert(kind)
         }
@@ -91,7 +104,7 @@ public class Navigator {
     ) {
         
         guard let viewController = viewController else {
-            assert(false, "Nvigator: viewcontroller must not be nil")
+            assert(false, "Navigator: viewController must not be nil")
             return
         }
         
@@ -101,8 +114,8 @@ public class Navigator {
             return
         }
         
-        if let destinationToPop = navigationController?.viewControllers.elementBeforeFirst(viewController) {
-            navigationController?.popToViewController(destinationToPop, animated: animated)
+        if let destinationToPop = navigationController.viewControllers.elementBeforeFirst(viewController) {
+            navigationController.popToViewController(destinationToPop, animated: animated)
             completion?()
             return
         }
@@ -111,9 +124,12 @@ public class Navigator {
     public func closeStack(animated: Bool = true) {
         
         let completion = { [weak self] in
-            guard let self, let navigationStackFirstViewController, self.navigationController?.viewControllers.contains(navigationStackFirstViewController) ?? false else { return }
+            guard let self,
+                  let navigationStackFirstViewController,
+                  self.navigationController.viewControllers.contains(navigationStackFirstViewController)
+            else { return }
             
-            self.navigationController?.popToViewController(navigationStackFirstViewController, animated: animated)
+            self.navigationController.popToViewController(navigationStackFirstViewController, animated: animated)
         }
         
         if let _ = presentationStackFirstViewController?.presentedViewController {
@@ -159,7 +175,7 @@ fileprivate extension Navigator {
     func presentPopover(
         _ viewController: UIViewController,
         delegate: UIPopoverPresentationControllerDelegate?,
-        popoverData: PopoverData,
+        popoverData: PopoverModel,
         animated: Bool
     ) {
         
@@ -167,7 +183,7 @@ fileprivate extension Navigator {
         
         let popoverViewController = viewController.popoverPresentationController
         popoverViewController?.delegate = delegate
-        popoverViewController?.permittedArrowDirections = popoverData.arrowDirection
+        popoverViewController?.permittedArrowDirections = popoverData.permittedArrowDirections
         popoverViewController?.backgroundColor = .white
         popoverViewController?.sourceRect = popoverData.sourceRect
         popoverViewController?.sourceView = popoverData.sourceView
@@ -175,7 +191,7 @@ fileprivate extension Navigator {
         present(viewController, animated: animated)
     }
     
-    func presentAlert(_ alertKind: AlertKind) {
+    func presentAlert(_ alertKind: AlertPresentationKind) {
         
         switch alertKind {
         case let .oneButton(title, message, buttonTitle, action):
@@ -209,9 +225,7 @@ fileprivate extension Navigator {
         _ viewController: UIViewController,
         animated: Bool
     ) {
-        
-        guard let navigationController else { return }
-        
+                
         guard navigationController.viewControllers.isEmpty else {
             navigationController.pushViewController(viewController, animated: animated)
             return
@@ -296,6 +310,7 @@ fileprivate extension Array where Element: Equatable {
         guard let indexOfElement = firstIndex(of: element), indexOfElement > startIndex else {
             return nil
         }
+        
         return self[index(before: indexOfElement)]
     }
 }
