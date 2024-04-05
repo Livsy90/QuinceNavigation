@@ -31,7 +31,7 @@ public class Navigator {
     
     // MARK: Properties
     
-    var childNavigator: Navigator {
+    public var childNavigator: Navigator {
         Navigator(navigationController)
     }
     
