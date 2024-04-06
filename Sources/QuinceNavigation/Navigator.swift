@@ -38,8 +38,8 @@ public class Navigator {
     // MARK: Private Properties
     
     private let navigationController: UINavigationController
-    private let navigationStackFirstViewController: UIViewController?
     private let presentationStackFirstViewController: UIViewController?
+    private var navigationStackFirstViewController: UIViewController?
     
     private var presentingViewController: UIViewController? {
         presentationStackFirstViewController?.presentationStack.last ?? presentationStackFirstViewController
@@ -91,6 +91,7 @@ public class Navigator {
                 animated: animated
             )
         case let .root(viewController):
+            navigationStackFirstViewController = viewController
             navigationController.setViewControllers([viewController], animated: animated)
         case let .alert(kind):
             presentAlert(kind)
@@ -231,6 +232,7 @@ fileprivate extension Navigator {
             return
         }
         
+        navigationStackFirstViewController = viewController
         navigationController.setViewControllers([viewController], animated: animated)
     }
     
