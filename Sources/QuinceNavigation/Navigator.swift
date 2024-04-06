@@ -242,7 +242,7 @@ fileprivate extension Navigator {
 
 fileprivate extension UIViewController {
     var rootParent: UIViewController? {
-        guard let parent = parent else {
+        guard let parent else {
             return nil
         }
         
@@ -250,7 +250,7 @@ fileprivate extension UIViewController {
     }
     
     var presentationStack: [UIViewController] {
-        guard let presentedViewController = presentedViewController else {
+        guard let presentedViewController else {
             return []
         }
         
