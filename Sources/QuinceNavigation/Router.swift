@@ -1,6 +1,6 @@
 import UIKit
 
-public class Navigator {
+public class Router {
     
     // MARK: Nested Entities
     
@@ -13,8 +13,21 @@ public class Navigator {
     }
     
     public enum AlertPresentationKind {
-        case oneButton(title: String, message: String? = nil, buttonTitle: String, action: (() -> Void)? = nil)
-        case twoButtons(title: String, message: String? = nil, firstButtonTitle: String, secondButtonTitle: String, firstButtonAction: (() -> Void)?, secondButtonAction: (() -> Void)?)
+        case oneButton(
+            title: String,
+            message: String? = nil,
+            buttonTitle: String,
+            action: (() -> Void)? = nil
+        )
+        
+        case twoButtons(
+            title: String,
+            message: String? = nil,
+            firstButtonTitle: String,
+            secondButtonTitle: String,
+            firstButtonAction: (() -> Void)?,
+            secondButtonAction: (() -> Void)?
+        )
     }
     
     public struct PopoverModel {
@@ -22,7 +35,12 @@ public class Navigator {
         var sourceView: UIView
         var permittedArrowDirections: UIPopoverArrowDirection
         
-        public init(sourceRect: CGRect, sourceView: UIView, permittedArrowDirections: UIPopoverArrowDirection) {
+        public init(
+            sourceRect: CGRect,
+            sourceView: UIView,
+            permittedArrowDirections: UIPopoverArrowDirection
+        ) {
+            
             self.sourceRect = sourceRect
             self.sourceView = sourceView
             self.permittedArrowDirections = permittedArrowDirections
@@ -31,8 +49,8 @@ public class Navigator {
     
     // MARK: Properties
     
-    public var childNavigator: Navigator {
-        Navigator(navigationController)
+    public var child: Router {
+        Router(navigationController)
     }
     
     // MARK: Private Properties
@@ -56,8 +74,8 @@ public class Navigator {
     
     // MARK: Functions
     
-    public func show(
-        _ presentationKind: PresentationKind,
+    public func route(
+        to presentationKind: PresentationKind,
         animated: Bool = true
     ) {
         
@@ -67,6 +85,7 @@ public class Navigator {
                 viewController,
                 animated: animated
             )
+            
         case let .popover(viewController, delegate, bubbleData):
             presentPopover(
                 viewController,
@@ -74,6 +93,7 @@ public class Navigator {
                 popoverData: bubbleData,
                 animated: animated
             )
+            
         case let .modal(hasNavigationBar, viewController, transitionStyle, presentationStyle):
             guard hasNavigationBar else {
                 presentModalWithoutNavigationBar(
@@ -84,15 +104,20 @@ public class Navigator {
                 )
                 return
             }
+            
             presentModalWithNavigationBar(
                 viewController,
                 transitionStyle: transitionStyle,
                 presentationStyle: presentationStyle,
                 animated: animated
             )
+            
         case let .root(viewController):
-            navigationStackFirstViewController = viewController
-            navigationController.setViewControllers([viewController], animated: animated)
+            root(
+                viewController,
+                animated: animated
+            )
+            
         case let .alert(kind):
             presentAlert(kind)
         }
@@ -105,7 +130,7 @@ public class Navigator {
     ) {
         
         guard let viewController = viewController else {
-            assert(false, "Navigator: viewController must not be nil")
+            assert(false, "Router: viewController must not be nil")
             return
         }
         
@@ -115,7 +140,7 @@ public class Navigator {
             return
         }
         
-        if let destinationToPop = navigationController.viewControllers.elementBeforeFirst(viewController) {
+        if let destinationToPop = navigationController.viewControllers.elementBefore(first: viewController) {
             navigationController.popToViewController(destinationToPop, animated: animated)
             completion?()
             return
@@ -144,7 +169,7 @@ public class Navigator {
 
 // MARK: Private Functions
 
-fileprivate extension Navigator {
+fileprivate extension Router {
     
     func presentModalWithNavigationBar(
         _ viewController: UIViewController,
@@ -202,6 +227,7 @@ fileprivate extension Navigator {
                 buttonTitle: buttonTitle,
                 completion: action
             )
+            
         case let .twoButtons(title, message, firstButtonTitle, secondButtonTitle, firstButtonAction, secondButtonAction):
             presentingViewController?.presentTwoButtonsAlert(
                 title: title,
@@ -226,7 +252,7 @@ fileprivate extension Navigator {
         _ viewController: UIViewController,
         animated: Bool
     ) {
-                
+        
         guard navigationController.viewControllers.isEmpty else {
             navigationController.pushViewController(viewController, animated: animated)
             return
@@ -236,9 +262,18 @@ fileprivate extension Navigator {
         navigationController.setViewControllers([viewController], animated: animated)
     }
     
+    func root(
+        _ viewController: UIViewController,
+        animated: Bool
+    ) {
+        
+        navigationStackFirstViewController = viewController
+        navigationController.setViewControllers([viewController], animated: animated)
+    }
+    
 }
 
-// MARK: - Extensions
+// MARK: - UIKit Extensions
 
 fileprivate extension UIViewController {
     var rootParent: UIViewController? {
@@ -268,17 +303,32 @@ fileprivate extension UIViewController {
         secondButtonAction: (() -> Void)? = nil
     ) {
         
-        let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        let firstAlertButton = UIAlertAction(title: firstButtonTitle, style: .default) { _ in
+        let alertController = UIAlertController(
+            title: title,
+            message: message,
+            preferredStyle: .alert
+        )
+        
+        let firstAlertButton = UIAlertAction(
+            title: firstButtonTitle,
+            style: .default
+        ) { _ in
+            
             firstButtonAction?()
         }
-        let secondAlertButton = UIAlertAction(title: secondButtonTitle, style: .default) { _ in
+        
+        let secondAlertButton = UIAlertAction(
+            title: secondButtonTitle,
+            style: .default
+        ) { _ in
+            
             secondButtonAction?()
         }
+        
         alertController.addAction(firstAlertButton)
         alertController.addAction(secondAlertButton)
         
-        self.present(alertController, animated: true, completion: nil)
+        present(alertController, animated: true)
     }
     
     func presentOneButtonAlert(
@@ -298,6 +348,7 @@ fileprivate extension UIViewController {
             title: buttonTitle,
             style: .default
         ) { _ in
+            
             completion?()
         }
         
@@ -307,12 +358,16 @@ fileprivate extension UIViewController {
     }
 }
 
+// MARK: - Foundation Extensions
+
 fileprivate extension Array where Element: Equatable {
-    func elementBeforeFirst(_ element: Element) -> Element? {
-        guard let indexOfElement = firstIndex(of: element), indexOfElement > startIndex else {
-            return nil
-        }
+    func elementBefore(first element: Element) -> Element? {
+        guard let elementIndex = firstIndex(of: element),
+              elementIndex > startIndex
+        else { return nil }
         
-        return self[index(before: indexOfElement)]
+        let index = self[index(before: elementIndex)]
+        
+        return index
     }
 }
